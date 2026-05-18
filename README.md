@@ -27,21 +27,19 @@ Sends prompt + context to the enhancement backend
         |
 LLM rewrites it into a structured, high-quality prompt
         |
-Enhanced prompt is placed back, ready to fire
+Enhanced prompt is placed in clipboard, ready to paste
 ```
 
 No context switching. No prompt engineering by hand. Just better output.
 
 ---
 
-## Features
+## Features (Phase 1)
 
-- **One-shortcut enhancement** -- trigger via `Ctrl+Alt+A` from anywhere in VS Code
-- **Context-aware rewriting** -- reads your active file, language, and selected code to produce a prompt that is specific rather than generic
-- **Mode selection** -- shape the prompt by intent: Debug, Explain, Refactor, or Write Tests
-- **Side-by-side diff view** -- see original vs enhanced before accepting
-- **Prompt history** -- every enhanced prompt is saved locally for reuse and reference
-- **Lightweight backend** -- fast Go server with sub-200ms median response time via Groq
+- **One-shortcut enhancement** -- trigger via `Ctrl+Alt+A`
+- **Context-aware rewriting** -- reads active file, language, and selected code
+- **Fast backend** -- TypeScript/Express server calling Groq LLM
+- **Phase 1 output** -- Enhanced prompt copied to clipboard
 
 ---
 
@@ -54,26 +52,24 @@ No context switching. No prompt engineering by hand. Just better output.
 |                                  |
 |  - Registers Ctrl+Alt+A          |
 |  - Reads editor context          |
-|  - Renders diff panel            |
+|  - Copies result to clipboard    |
 +---------------+------------------+
                 |  POST /enhance
                 v
 +----------------------------------+
 |       Enhancement Backend        |
-|             (Go)                 |
+|      (TypeScript / Express)      |
 |                                  |
-|  - Validates and sanitizes input |
-|  - Builds enriched prompt        |
-|  - Calls LLM API (Groq)          |
-|  - Returns structured response   |
+|  - Validates input               |
+|  - Calls Groq LLM                |
+|  - Returns enhanced prompt       |
 +---------------+------------------+
                 |
                 v
 +----------------------------------+
 |          LLM (Groq)              |
 |                                  |
-|  System: Prompt Engineer         |
-|  Input:  Raw prompt + context    |
+|  Model: llama-3.3-70b-versatile  |
 |  Output: Enhanced prompt         |
 +----------------------------------+
 ```
@@ -82,69 +78,101 @@ No context switching. No prompt engineering by hand. Just better output.
 
 ## Tech Stack
 
-| Layer                  | Technology      |
-| ---------------------- | --------------- |
-| VS Code Extension      | TypeScript      |
-| Backend API            | Go (net/http)   |
-| LLM Provider           | Groq            |
-| Prompt History Storage | Neon PostgreSQL |
-| Deployment             | Railway         |
+| Layer              | Technology             |
+| ------------------ | ---------------------- |
+| VS Code Extension  | TypeScript + VS Code API |
+| Backend API        | TypeScript + Express   |
+| LLM Provider       | Groq (llama-3.3-70b-versatile) |
+| Runtime            | Node.js                |
 
 ---
 
 ## Before and After
 
-| Raw Prompt          | Amplified Prompt                                                                                                                                         |
-| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| "fix this function" | "Refactor the `calculateTax()` function in `utils/finance.ts` to handle edge cases where `income` is null or negative, and add JSDoc comments"           |
-| "write a helper"    | "Write a Go helper function `parseUserFromJSON()` that safely unmarshals a JSON byte slice into a `User` struct, returning an error for malformed input" |
+| Raw Prompt          | Amplified Prompt |
+| ------------------- | ----------------- |
+| "fix this function" | "Refactor the `calculateTax()` function in `utils/finance.ts` to handle edge cases where `income` is null or negative, and add JSDoc comments" |
+| "explain this"      | "Explain the `parseUserFromJSON()` function in `auth.ts`, including its parameters, return type, and any edge cases it handles" |
 
 The difference is not magic. It is context and structure. Amplify injects both, automatically.
 
 ---
 
-## Project Status
-
-This project is currently in active development. The architecture is finalized and the extension scaffolding and backend API are in progress.
-
-Planned milestones:
-
-- [ ] VS Code extension scaffold with keybinding
-- [ ] Backend `/enhance` endpoint in Go
-- [ ] LLM integration via Groq
-- [ ] Diff view panel in VS Code
-- [ ] Mode selection (Debug / Explain / Refactor / Tests)
-- [ ] Prompt history with local storage
-- [ ] Publish to VS Code Marketplace
-
----
-
 ## Getting Started
 
-Installation and usage instructions will be added once the initial version is published to the VS Code Marketplace.
+### Prerequisites
 
-To run locally:
+- Node.js 20+
+- VS Code 1.90+
+
+### 1. Clone and setup
 
 ```bash
 git clone https://github.com/yourusername/amplify
 cd amplify
+```
 
-# Install extension dependencies
-cd extension && npm install
+### 2. Start the backend
 
-# Start the backend
-cd ../backend && go run main.go
+```bash
+cd backend
+cp .env.example .env
+# Add your GROQ_API_KEY to .env
+npm install
+npm run dev
+```
 
-# Open the extension in VS Code
-code extension/
-# Press F5 to launch Extension Development Host
+Backend runs on `http://localhost:8080`.
+
+### 3. Run the extension
+
+```bash
+cd ../extension
+npm install
+```
+
+Open the extension folder in VS Code and press **F5** to launch the Extension Development Host.
+
+### 4. Use
+
+- Open any code file in VS Code
+- Select some text (or keep it empty and enter a prompt when prompted)
+- Press **Ctrl+Alt+A**
+- Enhanced prompt is copied to your clipboard
+- Paste it into any AI assistant
+
+---
+
+## API
+
+### POST /enhance
+
+**Request:**
+
+```json
+{
+  "raw_prompt": "fix this function",
+  "language": "typescript",
+  "filename": "auth.ts",
+  "selected_code": "function getUser() { ... }"
+}
+```
+
+**Response:**
+
+```json
+{
+  "enhanced_prompt": "Refactor the getUser() function in auth.ts to handle..."
+}
 ```
 
 ---
 
-## Contributing
+## Roadmap
 
-Contributions, issues, and feature requests are welcome once the initial scaffold is up. Feel free to open a discussion in the meantime.
+- [x] Phase 1: MVP with Ctrl+Alt+A, Groq integration, clipboard output
+- [ ] Phase 2: Mode selection, diff view panel, prompt history
+- [ ] Phase 3: Marketplace publish, multi-file context, feedback signal
 
 ---
 
